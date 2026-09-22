@@ -34,8 +34,10 @@ ui <- fluidPage(
     ),
     mainPanel(
       plotOutput("area_map", height = "400px"),
+      h4("Crime types"),
+      DT::dataTableOutput("crime_category_table"),
       h4("Crime outcomes"),
-      DT::dataTableOutput("crime_table"),
+      DT::dataTableOutput("crime_outcome_table"),
       h4("Stop-and-search outcomes"),
       DT::dataTableOutput("stop_table")
     )
@@ -69,11 +71,26 @@ server <- function(input, output, session) {
     format(input$date_range, "%Y-%m")
   })
 
-  crime_summary <- eventReactive(input$fetch_crime, {
+  crime_data <- eventReactive(input$fetch_crime, {
     req(input$area_code)
     withProgress(message = "Fetching crime data...", {
-      crimes <- ao_data("crime", input$level, input$area_code, date = date_range_ym())
+      ao_data("crime", input$level, input$area_code, date = date_range_ym())
     })
+  })
+
+  crime_category_summary <- reactive({
+    crimes <- crime_data()
+    if (nrow(crimes) == 0) {
+      return(tibble::tibble(`Crime type` = character(), `Count` = integer()))
+    }
+    crimes |>
+      dplyr::count(category, name = "Count") |>
+      dplyr::arrange(dplyr::desc(.data$Count)) |>
+      dplyr::rename(`Crime type` = "category")
+  })
+
+  crime_outcome_summary <- reactive({
+    crimes <- crime_data()
     if (nrow(crimes) == 0) {
       return(tibble::tibble(`Outcome` = character(), `Count` = integer()))
     }
@@ -84,7 +101,8 @@ server <- function(input, output, session) {
       dplyr::rename(Outcome = "outcome_category")
   })
 
-  output$crime_table <- DT::renderDataTable(crime_summary(), options = list(pageLength = 10))
+  output$crime_category_table <- DT::renderDataTable(crime_category_summary(), options = list(pageLength = 10))
+  output$crime_outcome_table <- DT::renderDataTable(crime_outcome_summary(), options = list(pageLength = 10))
 
   stop_summary <- eventReactive(input$fetch_stops, {
     req(input$area_code)
