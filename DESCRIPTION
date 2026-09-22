@@ -1,13 +1,29 @@
 Package: AreasOfOpportunity
-Title: What the Package Does (One Line, Title Case)
+Title: Filter and Map UK Geographic Areas
 Version: 0.0.0.9000
-Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+Authors@R:
+    person("Paul", "Heselwood", , "paul.heselwood@proton.me", role = c("aut", "cre"))
+Description: A foundation for working with UK geographic areas. Lists and
+    filters areas at Output Area, LSOA, Ward, Local Authority District,
+    County, Community Safety Partnership and Police Force Area level (via
+    the ONS Open Geography Portal), and fetches area boundaries for
+    mapping. Intended as a base layer for other area-level data (e.g.
+    crime, deprivation) to be joined on top of.
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.0.0
+Depends:
+    R (>= 4.1.0)
+Imports:
+    dplyr,
+    ggplot2,
+    httr2,
+    rlang,
+    sf,
+    tibble
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
 URL: https://github.com/PaulWHeselwood/AreasOfOpportunity
 BugReports: https://github.com/PaulWHeselwood/AreasOfOpportunity/issues
+Config/roxygen2/version: 8.1.0
