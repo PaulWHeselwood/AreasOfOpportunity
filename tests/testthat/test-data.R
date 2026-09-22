@@ -30,6 +30,19 @@ test_that("boundary_to_poly_string() thins points to respect max_chars", {
   expect_gte(n_points(thinned), 4)
 })
 
+test_that("expand_months() handles NULL, a single date, and a range", {
+  expect_identical(expand_months(NULL), list(NULL))
+  expect_identical(expand_months("2024-01"), list("2024-01"))
+  expect_identical(
+    expand_months(c("2023-11", "2024-02")),
+    list("2023-11", "2023-12", "2024-01", "2024-02")
+  )
+})
+
+test_that("expand_months() rejects a reversed range", {
+  expect_error(expand_months(c("2024-02", "2024-01")), "on or before")
+})
+
 test_that("ao_data() fetches real crime data for an area", {
   skip_if_offline()
   skip_on_cran()

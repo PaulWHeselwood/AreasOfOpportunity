@@ -17,5 +17,6 @@ ao_area_boundary <- function(level, code) {
   check_level(level)
   spec <- ons_boundaries[[level]]
   out_fields <- c(spec$code_field, if (!is.na(spec$name_field)) spec$name_field)
-  arcgis_query_sf(spec$service, spec$code_field, code, out_fields = out_fields)
+  where <- sprintf("%s = '%s'", spec$code_field, sql_escape(code))
+  arcgis_query_sf(spec$service, where, out_fields = out_fields)
 }

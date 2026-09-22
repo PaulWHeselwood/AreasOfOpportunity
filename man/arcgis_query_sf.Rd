@@ -2,23 +2,21 @@
 % Please edit documentation in R/fetch.R
 \name{arcgis_query_sf}
 \alias{arcgis_query_sf}
-\title{Fetch the boundary of a single area as \code{sf}}
+\title{Fetch matching features from an ArcGIS \code{FeatureServer} layer as \code{sf}}
 \usage{
-arcgis_query_sf(service, code_field, code, out_fields = "*")
+arcgis_query_sf(service, where, out_fields = "*")
 }
 \arguments{
 \item{service}{Service name (relative to \link{ons_host}).}
 
-\item{code_field}{Field holding the area's code.}
-
-\item{code}{The area's code to match.}
+\item{where}{SQL \code{where} clause.}
 
 \item{out_fields}{Character vector of fields to return.}
 }
 \value{
-An \code{sf} object with one row.
+An \code{sf} object with one row per matching feature.
 }
 \description{
-Fetch the boundary of a single area as \code{sf}
+Fetch matching features from an ArcGIS \code{FeatureServer} layer as \code{sf}
 }
 \keyword{internal}

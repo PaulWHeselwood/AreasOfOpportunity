@@ -3,12 +3,15 @@
 \name{ons_host}
 \alias{ons_host}
 \alias{ons_boundaries}
+\alias{ons_country_service}
 \alias{ons_lookups}
 \title{ONS Open Geography Portal service registry}
 \usage{
 ons_host
 
 ons_boundaries
+
+ons_country_service
 
 ons_lookups
 }

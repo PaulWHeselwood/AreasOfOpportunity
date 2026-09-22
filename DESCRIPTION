@@ -16,10 +16,12 @@ Depends:
     R (>= 4.1.0)
 Imports:
     dplyr,
+    DT,
     ggplot2,
     httr2,
     rlang,
     sf,
+    shiny,
     tibble
 Suggests:
     testthat (>= 3.0.0)

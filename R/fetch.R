@@ -64,17 +64,15 @@ arcgis_query_all <- function(service, fields, page_size = 2000) {
   dplyr::bind_rows(pages)
 }
 
-#' Fetch the boundary of a single area as `sf`
+#' Fetch matching features from an ArcGIS `FeatureServer` layer as `sf`
 #'
 #' @param service Service name (relative to [ons_host]).
-#' @param code_field Field holding the area's code.
-#' @param code The area's code to match.
+#' @param where SQL `where` clause.
 #' @param out_fields Character vector of fields to return.
 #'
-#' @return An `sf` object with one row.
+#' @return An `sf` object with one row per matching feature.
 #' @keywords internal
-arcgis_query_sf <- function(service, code_field, code, out_fields = "*") {
-  where <- sprintf("%s = '%s'", code_field, sql_escape(code))
+arcgis_query_sf <- function(service, where, out_fields = "*") {
   req <- httr2::request(paste0(ons_host, "/", service, "/FeatureServer/0/query"))
   req <- httr2::req_url_query(
     req,
@@ -90,7 +88,7 @@ arcgis_query_sf <- function(service, code_field, code, out_fields = "*") {
   out <- sf::read_sf(tmp, quiet = TRUE)
 
   if (nrow(out) == 0) {
-    stop(sprintf("No boundary found for %s = '%s'.", code_field, code), call. = FALSE)
+    stop(sprintf("No features found for: %s", where), call. = FALSE)
   }
   out
 }

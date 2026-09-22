@@ -13,10 +13,10 @@ ao_data(source, level, code, ...)
 
 \item{code}{The area's code, e.g. from \code{\link[=ao_areas]{ao_areas()}}.}
 
-\item{...}{Passed on to the data source's connector. For \code{"crime"}:
-\code{date} (a single month as \code{"YYYY-MM"}, or \code{NULL} for the latest month)
-and \code{category} (defaults to \code{"all-crime"}). For \code{"stop_search"}:
-\code{date}.}
+\item{...}{Passed on to the data source's connector. For \code{"crime"} and
+\code{"stop_search"}: \code{date}, which can be \code{NULL} (latest month), a single
+\code{"YYYY-MM"}, or \code{c(from, to)} for an inclusive range of months. \code{crime}
+also takes \code{category} (defaults to \code{"all-crime"}).}
 }
 \value{
 A tibble of results for that area, tagged with \code{level}/\code{code}
@@ -31,6 +31,6 @@ about (see \code{\link[=ao_data_sources]{ao_data_sources()}}) - each returns a t
 \dontrun{
 leeds_code <- ao_areas("lad", name = "Leeds")$code[1]
 ao_data("crime", "lad", leeds_code, date = "2024-01")
-ao_data("stop_search", "lad", leeds_code, date = "2024-01")
+ao_data("stop_search", "lad", leeds_code, date = c("2023-11", "2024-01"))
 }
 }

@@ -39,10 +39,12 @@ boundary_to_poly_string <- function(boundary, max_chars = 2500, dp = 5) {
 
 #' Query a police.uk street-level (poly-based) endpoint for one area
 #'
+#' Takes an already-fetched boundary (rather than `level`/`code`) so a
+#' multi-month range can fetch the boundary once and reuse it across calls.
+#'
 #' @param path The endpoint path, e.g. `"stops-street"` or
 #'   `"crimes-street/all-crime"`.
-#' @param level One of [ao_area_levels()].
-#' @param code The area's code, e.g. from [ao_areas()].
+#' @param boundary An `sf` object, as returned by [ao_area_boundary()].
 #' @param date A single month as `"YYYY-MM"`, or `NULL` for the latest month
 #'   available.
 #' @param max_chars Passed to [boundary_to_poly_string()]. If the request
@@ -50,15 +52,23 @@ boundary_to_poly_string <- function(boundary, max_chars = 2500, dp = 5) {
 #'   characters before giving up.
 #'
 #' @return A tibble, with the nested `location` field flattened into
-#'   `latitude`/`longitude`/`street_name` columns, or an empty
-#'   `tibble::tibble()` if nothing was found.
+#'   `latitude`/`longitude`/`street_name` columns (and, where present, the
+#'   nested `outcome_status` field flattened into `outcome_category`/
+#'   `outcome_date`), or an empty `tibble::tibble()` if nothing was found.
 #' @keywords internal
-police_uk_query_poly <- function(path, level, code, date = NULL, max_chars = 2500) {
-  boundary <- ao_area_boundary(level, code)
-
+police_uk_query_poly <- function(path, boundary, date = NULL, max_chars = 2500) {
   do_request <- function(poly_value) {
     req <- httr2::request(paste0(police_uk_host, "/", path))
     req <- httr2::req_url_query(req, poly = poly_value, date = date)
+    # Busy urban areas can make this endpoint slow/flaky (observed 502/503
+    # under load, unrelated to the request itself) - retry transient server
+    # errors with backoff, on top of the 400 (too-long-poly) handling below.
+    req <- httr2::req_retry(
+      req,
+      max_tries = 4,
+      is_transient = function(resp) httr2::resp_status(resp) %in% c(502, 503, 504),
+      backoff = function(n) 2^n
+    )
     httr2::req_perform(req)
   }
 
@@ -86,17 +96,39 @@ police_uk_query_poly <- function(path, level, code, date = NULL, max_chars = 250
     out$street_name <- if ("street" %in% names(loc)) loc$street$name else NA_character_
     out$location <- NULL
   }
+  if ("outcome_status" %in% names(out)) {
+    # `outcome_status` is `null` for many records, so jsonlite may not
+    # simplify it into a clean nested data.frame - handle both shapes.
+    extract_outcome_field <- function(outcome, field) {
+      if (is.data.frame(outcome)) {
+        if (field %in% names(outcome)) as.character(outcome[[field]]) else NA_character_
+      } else {
+        vapply(outcome, function(el) {
+          if (is.null(el) || !is.list(el) || is.null(el[[field]])) NA_character_ else as.character(el[[field]])
+        }, character(1))
+      }
+    }
+    out$outcome_category <- extract_outcome_field(out$outcome_status, "category")
+    out$outcome_date <- extract_outcome_field(out$outcome_status, "date")
+    out$outcome_status <- NULL
+  }
   out
 }
 
 #' @keywords internal
 fetch_crime <- function(level, code, date = NULL, category = "all-crime") {
-  out <- police_uk_query_poly(paste0("crimes-street/", category), level, code, date = date)
+  boundary <- ao_area_boundary(level, code)
+  out <- dplyr::bind_rows(lapply(expand_months(date), function(m) {
+    police_uk_query_poly(paste0("crimes-street/", category), boundary, date = m)
+  }))
   tag_area(out, level, code)
 }
 
 #' @keywords internal
 fetch_stop_search <- function(level, code, date = NULL) {
-  out <- police_uk_query_poly("stops-street", level, code, date = date)
+  boundary <- ao_area_boundary(level, code)
+  out <- dplyr::bind_rows(lapply(expand_months(date), function(m) {
+    police_uk_query_poly("stops-street", boundary, date = m)
+  }))
   tag_area(out, level, code)
 }

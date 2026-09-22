@@ -52,6 +52,14 @@ ons_boundaries <- list(
 
 #' @rdname ons_datasets
 #' @keywords internal
+ons_country_service <- list(
+  service = "Countries_December_2025_Boundaries_UK_BUC",
+  code_field = "CTRY25CD",
+  name_field = "CTRY25NM"
+)
+
+#' @rdname ons_datasets
+#' @keywords internal
 ons_lookups <- list(
   oa_lsoa_msoa = list(
     service = "OA_LSOA_MSOA_EW_DEC_2021_LU_v3",

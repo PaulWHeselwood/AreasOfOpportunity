@@ -4,15 +4,13 @@
 \alias{police_uk_query_poly}
 \title{Query a police.uk street-level (poly-based) endpoint for one area}
 \usage{
-police_uk_query_poly(path, level, code, date = NULL, max_chars = 2500)
+police_uk_query_poly(path, boundary, date = NULL, max_chars = 2500)
 }
 \arguments{
 \item{path}{The endpoint path, e.g. \code{"stops-street"} or
 \code{"crimes-street/all-crime"}.}
 
-\item{level}{One of \code{\link[=ao_area_levels]{ao_area_levels()}}.}
-
-\item{code}{The area's code, e.g. from \code{\link[=ao_areas]{ao_areas()}}.}
+\item{boundary}{An \code{sf} object, as returned by \code{\link[=ao_area_boundary]{ao_area_boundary()}}.}
 
 \item{date}{A single month as \code{"YYYY-MM"}, or \code{NULL} for the latest month
 available.}
@@ -23,10 +21,12 @@ characters before giving up.}
 }
 \value{
 A tibble, with the nested \code{location} field flattened into
-\code{latitude}/\code{longitude}/\code{street_name} columns, or an empty
-\code{tibble::tibble()} if nothing was found.
+\code{latitude}/\code{longitude}/\code{street_name} columns (and, where present, the
+nested \code{outcome_status} field flattened into \code{outcome_category}/
+\code{outcome_date}), or an empty \code{tibble::tibble()} if nothing was found.
 }
 \description{
-Query a police.uk street-level (poly-based) endpoint for one area
+Takes an already-fetched boundary (rather than \code{level}/\code{code}) so a
+multi-month range can fetch the boundary once and reuse it across calls.
 }
 \keyword{internal}

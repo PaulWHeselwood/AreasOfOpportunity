@@ -11,6 +11,19 @@ get_lookup <- function(lookup_name) {
   )
 }
 
+#' The England & Wales national outline, for use as map background context
+#'
+#' @return An `sf` object (England and Wales as separate features), cached
+#'   locally after the first call.
+#' @keywords internal
+england_wales_outline <- function() {
+  ao_cached("england_wales_outline", function() {
+    spec <- ons_country_service
+    where <- sprintf("%s IN ('E92000001', 'W92000004')", spec$code_field)
+    arcgis_query_sf(spec$service, where, out_fields = c(spec$code_field, spec$name_field))
+  })
+}
+
 #' Build the joined area hierarchy, one tibble per level
 #'
 #' Each level's tibble has a `code` and `name` column for that level, plus a
