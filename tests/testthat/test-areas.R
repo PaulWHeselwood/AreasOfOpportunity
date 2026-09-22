@@ -15,3 +15,13 @@ test_that("ao_areas() requires within_code alongside within_level", {
     "within_code"
   )
 })
+
+test_that("ao_areas() rejects within_level = 'csp' for ward/lad (not a clean nesting)", {
+  skip_if_offline()
+  skip_on_cran()
+
+  expect_error(
+    ao_areas("ward", within_level = "csp", within_code = "E22000342"),
+    "isn't a coarser level"
+  )
+})

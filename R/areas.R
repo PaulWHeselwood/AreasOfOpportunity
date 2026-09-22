@@ -26,16 +26,19 @@ area_universe <- function() {
     ward_lad_county <- get_lookup("ward_lad_county")
     lad_csp_pfa <- get_lookup("lad_csp_pfa")
 
+    # NB: LAD <-> PFA is a clean one-to-one relationship (every LAD sits in
+    # exactly one PFA), but LAD <-> CSP is *not* - a handful of merged
+    # unitary authorities (e.g. Bournemouth, Christchurch and Poole) split
+    # across multiple CSPs, and some CSPs span multiple LADs. So PFA can be
+    # safely derived from LAD below, but CSP can't - it's only exposed as
+    # its own level (see `csp_tbl`), not as an ancestor of lad/ward/lsoa/oa.
     lad_tbl <- ward_lad_county |>
       dplyr::distinct(.data$LAD25CD, .data$LAD25NM, .data$CTYUA25CD, .data$CTYUA25NM) |>
       dplyr::rename(code = "LAD25CD", name = "LAD25NM", county_code = "CTYUA25CD", county_name = "CTYUA25NM") |>
       dplyr::left_join(
         lad_csp_pfa |>
-          dplyr::distinct(.data$LAD24CD, .data$CSP24CD, .data$CSP24NM, .data$PFA24CD, .data$PFA24NM) |>
-          dplyr::rename(
-            code = "LAD24CD", csp_code = "CSP24CD", csp_name = "CSP24NM",
-            police_force_area_code = "PFA24CD", police_force_area_name = "PFA24NM"
-          ),
+          dplyr::distinct(.data$LAD24CD, .data$PFA24CD, .data$PFA24NM) |>
+          dplyr::rename(code = "LAD24CD", police_force_area_code = "PFA24CD", police_force_area_name = "PFA24NM"),
         by = "code"
       )
 
@@ -46,7 +49,7 @@ area_universe <- function() {
         county_code = "CTYUA25CD", county_name = "CTYUA25NM"
       ) |>
       dplyr::left_join(
-        lad_tbl |> dplyr::select("code", "csp_code", "csp_name", "police_force_area_code", "police_force_area_name"),
+        lad_tbl |> dplyr::select("code", "police_force_area_code", "police_force_area_name"),
         by = c("lad_code" = "code")
       )
 
@@ -60,10 +63,7 @@ area_universe <- function() {
         lad_code = "LAD25CD", lad_name = "LAD25NM"
       ) |>
       dplyr::left_join(
-        ward_tbl |> dplyr::select(
-          "code", "county_code", "county_name", "csp_code", "csp_name",
-          "police_force_area_code", "police_force_area_name"
-        ),
+        ward_tbl |> dplyr::select("code", "county_code", "county_name", "police_force_area_code", "police_force_area_name"),
         by = c("ward_code" = "code")
       )
 
@@ -74,8 +74,7 @@ area_universe <- function() {
       dplyr::left_join(
         lsoa_tbl |> dplyr::rename(lsoa_name = "name") |> dplyr::select(
           "code", "lsoa_name", "ward_code", "ward_name", "lad_code", "lad_name",
-          "county_code", "county_name", "csp_code", "csp_name",
-          "police_force_area_code", "police_force_area_name"
+          "county_code", "county_name", "police_force_area_code", "police_force_area_name"
         ),
         by = c("lsoa_code" = "code")
       )
@@ -127,11 +126,18 @@ check_level <- function(level) {
 #'
 #' The finest four levels form a strict chain - each Output Area sits inside
 #' one LSOA, each LSOA inside one Ward, each Ward inside one Local Authority
-#' District (`"lad"`). `"county"`, `"csp"` (Community Safety Partnership) and
-#' `"police_force_area"` are all derived independently *from* `"lad"` rather
-#' than nested inside `"county"` - except that `"csp"` also nests inside
-#' `"police_force_area"` (each police force area is made up of several
-#' community safety partnerships).
+#' District (`"lad"`). `"county"` and `"police_force_area"` are both derived
+#' independently *from* `"lad"` (every LAD sits in exactly one of each)
+#' rather than nested inside each other, so `ao_areas()` can trace
+#' output_area/lsoa/ward/lad up to either of them.
+#'
+#' `"csp"` (Community Safety Partnership) nests cleanly inside
+#' `"police_force_area"`, but *not* cleanly inside `"lad"` - a handful of
+#' merged unitary authorities (e.g. Bournemouth, Christchurch and Poole)
+#' split across multiple CSPs, and some CSPs span multiple LADs. So `"csp"`
+#' can be filtered `within_level = "police_force_area"`, but isn't exposed
+#' as an ancestor of `"lad"`/`"ward"`/`"lsoa"`/`"output_area"`, and those
+#' levels can't be filtered `within_level = "csp"`.
 #'
 #' Coverage: these levels come from ONS geographies that are complete for
 #' England and Wales. `"lad"` and `"ward"` also extend to Scotland and
@@ -177,13 +183,16 @@ ao_area_levels <- function() {
 #' }
 ao_areas <- function(level, name = NULL, code = NULL, within_level = NULL, within_code = NULL) {
   check_level(level)
-  tbl <- area_universe()[[level]]
-
   if (!is.null(within_level)) {
     check_level(within_level)
     if (is.null(within_code)) {
       stop("`within_code` must be supplied together with `within_level`.", call. = FALSE)
     }
+  }
+
+  tbl <- area_universe()[[level]]
+
+  if (!is.null(within_level)) {
     within_col <- paste0(within_level, "_code")
     if (!within_col %in% names(tbl)) {
       stop(

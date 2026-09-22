@@ -12,13 +12,20 @@ A character vector of level names, from finest to coarsest.
 \description{
 The finest four levels form a strict chain - each Output Area sits inside
 one LSOA, each LSOA inside one Ward, each Ward inside one Local Authority
-District (\code{"lad"}). \code{"county"}, \code{"csp"} (Community Safety Partnership) and
-\code{"police_force_area"} are all derived independently \emph{from} \code{"lad"} rather
-than nested inside \code{"county"} - except that \code{"csp"} also nests inside
-\code{"police_force_area"} (each police force area is made up of several
-community safety partnerships).
+District (\code{"lad"}). \code{"county"} and \code{"police_force_area"} are both derived
+independently \emph{from} \code{"lad"} (every LAD sits in exactly one of each)
+rather than nested inside each other, so \code{ao_areas()} can trace
+output_area/lsoa/ward/lad up to either of them.
 }
 \details{
+\code{"csp"} (Community Safety Partnership) nests cleanly inside
+\code{"police_force_area"}, but \emph{not} cleanly inside \code{"lad"} - a handful of
+merged unitary authorities (e.g. Bournemouth, Christchurch and Poole)
+split across multiple CSPs, and some CSPs span multiple LADs. So \code{"csp"}
+can be filtered \code{within_level = "police_force_area"}, but isn't exposed
+as an ancestor of \code{"lad"}/\code{"ward"}/\code{"lsoa"}/\code{"output_area"}, and those
+levels can't be filtered \code{within_level = "csp"}.
+
 Coverage: these levels come from ONS geographies that are complete for
 England and Wales. \code{"lad"} and \code{"ward"} also extend to Scotland and
 Northern Ireland, but \code{"county"}, \code{"csp"} and \code{"police_force_area"} do
